@@ -1,11 +1,13 @@
-# https://github.com/cypress-io/github-action#custom-cache-key
-
-
 name: ci
 on: [push]
 jobs:
   build-and-test:
     runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # run 3 copies of the current job in parallel
+        containers: [1, 2, 3]
     steps:
       - name: Checkout 🛎
         uses: actions/checkout@v2
@@ -14,8 +16,24 @@ jobs:
         uses: cypress-io/github-action@v2
         with:
           record: true
+          parallel: true
           start: npm start
           wait-on: 'http://localhost:8080'
+          group: All specs
+        env:
+          # pass the record key as environment variable
+          # during this CI step
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+
+      - name: Run Smoke tests 💨
+        uses: cypress-io/github-action@v2
+        with:
+          record: true
+          parallel: true
+          start: npm start
+          wait-on: 'http://localhost:8080'
+          group: Smoke specs
+          spec: 'cypress/integration/smoke/**/*.js'
         env:
           # pass the record key as environment variable
           # during this CI step
